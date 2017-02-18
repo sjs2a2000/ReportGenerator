@@ -1,0 +1,136 @@
+[Root]
+Most Recent Package=SontagSetup
+
+
+[Package|SontagSetup|Root]
+SubWizProgID=PDWizard.SetupPkgSubWiz
+BuildFolder=C:\FTI-Programs\Sontag\Package
+
+[Package|SontagSetup|Configure DAO ISAMs]
+Applicable=Yes
+Jet 2.x=Yes
+
+[Package|SontagSetup|Configure DAO ODBC]
+JetWorkspace=Yes
+ODBCDirect=Yes
+
+[Package|SontagSetup|Files Found]
+
+[Package|SontagSetup|Files Released]
+
+[Package|SontagSetup|Missing Dependency Information]
+C:\Program Files\Common Files\System\ado\msado20.tlb=
+C:\Program Files\Microsoft Office\Office\EXCEL9.OLB=
+C:\WINDOWS\system32\cdosys.dll=
+C:\Program Files\Common Files\System\ado\msadox.dll=
+C:\Program Files\Common Files\System\ado\msadomd.dll=
+C:\WINDOWS\system32\inetsrv\ntfsdrv.dll=
+
+[Package|SontagSetup|Out-of-Date Dependency Information]
+
+[Package|SontagSetup|Files Added]
+
+[Package|SontagSetup|Files Removed]
+
+[Package|SontagSetup|Files In Project]
+C:\FTI-Programs\Production\SontagIndicators.exe=Yes
+C:\WINDOWS\system32\msvbvm60.dll=Yes
+C:\WINDOWS\system32\oleaut32.dll=Yes
+C:\WINDOWS\system32\olepro32.dll=Yes
+C:\WINDOWS\system32\asycfilt.dll=Yes
+C:\WINDOWS\system32\stdole2.tlb=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\COMCAT.DLL=Yes
+C:\WINDOWS\system32\inetsrv\ntfsdrv.dll=Yes
+C:\Program Files\Common Files\System\ado\msadomd.dll=Yes
+C:\Program Files\Common Files\System\ado\msadox.dll=Yes
+C:\WINDOWS\system32\cdosys.dll=Yes
+C:\Program Files\Microsoft Office\Office\EXCEL9.OLB=Yes
+C:\Program Files\Common Files\Microsoft Shared\DAO\dao2535.tlb=Yes
+C:\Program Files\Common Files\Microsoft Shared\DAO\dao350.dll=Yes
+C:\WINDOWS\system32\msjet35.dll=Yes
+C:\WINDOWS\system32\msjter35.dll=Yes
+C:\WINDOWS\system32\msjint35.dll=Yes
+C:\WINDOWS\system32\vbajet32.dll=Yes
+C:\WINDOWS\system32\expsrv.dll=Yes
+C:\WINDOWS\system32\msrd2x35.dll=Yes
+C:\WINDOWS\system32\MSREPL35.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\MSVCRT40.DLL=Yes
+C:\WINDOWS\system32\VB5DB.DLL=Yes
+C:\Program Files\Common Files\System\ado\msado20.tlb=Yes
+C:\WINDOWS\system32\msrdo20.dll=Yes
+C:\WINDOWS\system32\Rdocurs.dll=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\MDAC_TYP.EXE=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP.EXE=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP1.EXE=Yes
+C:\WINDOWS\system32\VB6STKIT.DLL=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\ST6UNST.EXE=Yes
+
+[Package|SontagSetup|Configure Registry Files]
+Applicable=No
+
+[Package|SontagSetup|Configure Remote Servers]
+Applicable=No
+
+[Package|SontagSetup|Install Locations]
+C:\FTI-Programs\Production\SontagIndicators.exe=$(AppPath)
+C:\WINDOWS\system32\msvbvm60.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\oleaut32.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\olepro32.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\asycfilt.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\stdole2.tlb=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\COMCAT.DLL=$(WinSysPathSysFile)
+C:\WINDOWS\system32\inetsrv\ntfsdrv.dll=$(WinSysPath)
+C:\Program Files\Common Files\System\ado\msadomd.dll=$(WinSysPath)
+C:\Program Files\Common Files\System\ado\msadox.dll=$(WinSysPath)
+C:\WINDOWS\system32\cdosys.dll=$(WinSysPath)
+C:\Program Files\Microsoft Office\Office\EXCEL9.OLB=$(WinSysPath)
+C:\Program Files\Common Files\Microsoft Shared\DAO\dao2535.tlb=$(MSDAOPath)
+C:\Program Files\Common Files\Microsoft Shared\DAO\dao350.dll=$(MSDAOPath)
+C:\WINDOWS\system32\msjet35.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\msjter35.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\msjint35.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\vbajet32.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\expsrv.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\msrd2x35.dll=$(WinSysPathSysFile)
+C:\WINDOWS\system32\MSREPL35.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\MSVCRT40.DLL=$(WinSysPathSysFile)
+C:\WINDOWS\system32\VB5DB.DLL=$(WinSysPath)
+C:\Program Files\Common Files\System\ado\msado20.tlb=$(WinSysPath)
+C:\WINDOWS\system32\msrdo20.dll=$(WinSysPath)
+C:\WINDOWS\system32\Rdocurs.dll=$(WinSysPath)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\MDAC_TYP.EXE=$(AppPath)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP.EXE=$(AppPath)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\SETUP1.EXE=$(WinPath)
+C:\WINDOWS\system32\VB6STKIT.DLL=$(WinSysPathSysFile)
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\ST6UNST.EXE=$(WinPath)
+
+[Package|SontagSetup|Configure Shared Files]
+Applicable=Yes
+C:\FTI-Programs\Production\SontagIndicators.exe=Yes
+C:\Program Files\Microsoft Visual Studio\VB98\Wizards\PDWizard\Redist\MDAC_TYP.EXE=Yes
+
+[Package|SontagSetup|Distribution]
+Type=single
+Size=
+Title=SontagIndicators
+
+[Package|SontagSetup|IconGroups]
+Group0=SontagIndicators
+PrivateGroup0=True
+Parent0=$(Programs)
+
+[Package|SontagSetup|SontagIndicators]
+Icon1=SontagIndicators.exe
+Title1=SontagIndicators
+StartIn1=$(AppPath)
+Key1=Icon1
+
+[Package|SontagSetup|Package]
+PackageFolder=C:\FTI-Programs\Sontag\Package
+ProjectFolder=C:\FTI-Programs\Sontag
+ServerSideCab=
+File1=C:\FTI-Programs\Sontag\Package\setup.exe
+File2=C:\FTI-Programs\Sontag\Package\Setup.Lst
+File3=C:\FTI-Programs\Sontag\Package\SontagIndicators.CAB
+Handler1=PDWizard.FolderDplySubWiz
+Handler2=PDWizard.WebPostDplySubWiz

@@ -1,0 +1,44 @@
+.OPTION EXPLICIT
+.Set Cabinet=off
+.Set Compress=off
+.Set MaxDiskSize=CDROM
+.Set ReservePerCabinetSize=6144
+.Set DiskDirectoryTemplate=".."
+.Set CompressionType=MSZIP
+.Set CompressionLevel=7
+.Set CompressionMemory=21
+.Set CabinetNameTemplate="SontagIndicators.CAB"
+"Setup.Lst"
+"setup.exe"
+.Set Cabinet=on
+.Set Compress=on
+"SontagIndicators.exe"
+"msvbvm60.dll"
+"oleaut32.dll"
+"olepro32.dll"
+"asycfilt.dll"
+"stdole2.tlb"
+"COMCAT.DLL"
+"ntfsdrv.dll"
+"msadomd.dll"
+"msadox.dll"
+"cdosys.dll"
+"EXCEL9.OLB"
+"dao2535.tlb"
+"dao350.dll"
+"msjet35.dll"
+"msjter35.dll"
+"msjint35.dll"
+"vbajet32.dll"
+"expsrv.dll"
+"msrd2x35.dll"
+"MSREPL35.DLL"
+"MSVCRT40.DLL"
+"VB5DB.DLL"
+"msado20.tlb"
+"msrdo20.dll"
+"Rdocurs.dll"
+"MDAC_TYP.EXE"
+"SETUP1.EXE"
+"VB6STKIT.DLL"
+"ST6UNST.EXE"
