@@ -6,13 +6,23 @@ Attribute VB_Name = "modSontag"
 '**                                                        All rights reserved.                                                         **
 ' ***************************************************************************************************************************************
 Global dtTradeDate As Date
+Type Historic
+    Date        As String * 10
+    Open        As Currency
+    High        As Currency
+    Low         As Currency
+    Close       As Currency
+    Volume      As Long
+End Type
+Global Hist(300) As Historic
+
 Sub Main()
 
-    CheckForHoliday
+    'CheckForHoliday
     CreateDailyResults
     CreateWeeklyResults
-'    CreateSummary
-    SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\FTI-Programs\Sontag\sontagtechnicals-2.xls"
+    'CreateSummary
+    SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals-2.xls"
 
 End Sub
 Sub CreateSummary()
@@ -36,7 +46,7 @@ Sub CreateSummary()
     Dim ExcelWorkBook       As Excel.Workbook
     Dim ExcelSheet          As Excel.Worksheet
     Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\fti-programs\sontag\sontagtechnicals-2.xls")
+    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-2.xls")
     Set ExcelSheet = ExcelWorkBook.Worksheets(2)
         
 'MsgBox "got here 1"
@@ -112,7 +122,7 @@ Sub CreateWeeklyResults()
     Dim ExcelWorkBook       As Excel.Workbook
     Dim ExcelSheet          As Excel.Worksheet
     Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\fti-programs\sontag\sontagtechnicals-1.xls")
+    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-1.xls")
     Set ExcelSheet = ExcelWorkBook.Worksheets(2)
 ' MsgBox "got here 3"
  
@@ -482,7 +492,7 @@ Sub CreateWeeklyResults()
     
     
     ExcelSheet.EnableAutoFilter = True
-    ExcelWorkBook.SaveCopyAs ("c:\fti-programs\sontag\sontagtechnicals-2.xls")
+    ExcelWorkBook.SaveCopyAs ("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-2.xls")
     ExcelWorkBook.Close savechanges = False
     Excel.Application.Quit
     ExcelApp.Application.Quit
@@ -543,7 +553,7 @@ Sub CreateDailyResults()
     Dim ExcelWorkBook       As Excel.Workbook
     Dim ExcelSheet          As Excel.Worksheet
     Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\fti-programs\sontag\sontagtechnicals.xls")
+    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals.xls")
     Set ExcelSheet = ExcelWorkBook.Worksheets(1)
  
     Dim cnnl As New ADODB.Connection
@@ -924,7 +934,7 @@ Debug.Print sSymbol
     
     
     ExcelSheet.EnableAutoFilter = True
-    ExcelWorkBook.SaveCopyAs ("c:\fti-programs\sontag\sontagtechnicals-1.xls")
+    ExcelWorkBook.SaveCopyAs ("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-1.xls")
     ExcelWorkBook.Close savechanges = False
     Excel.Application.Quit
     ExcelApp.Application.Quit
@@ -1284,3 +1294,74 @@ Debug.Print Hist(1).Close, dSMA, lPeriods, dSMA / lPeriods, lCount
     
 End Function
 
+Sub GetPublicPrices(sSymbol As String, iPeriod As Integer)
+
+    '---------------------------------------------------------------------------------------------------------------------------------
+    ' This routine retrieves data that was collected from the public domain.
+    '---------------------------------------------------------------------------------------------------------------------------------
+    
+    On Error Resume Next
+   
+
+    Dim sPath               As String
+    Dim sPeriod(3)          As String
+    Dim sDate               As String
+    Dim dOpen               As Double
+    Dim dHigh               As Double
+    Dim dLow                As Double
+    Dim dClose              As Double
+    Dim lVolumeInput        As Long
+    Dim dAdjClose           As Double
+
+    sPath = "c:\PublicStockData\"
+ '
+    sPeriod(1) = "Daily"
+    sPeriod(2) = "Weekly"
+    sPeriod(3) = "Monthly"
+    
+    sSymbol = Trim(sSymbol)
+
+    iFile = FreeFile
+   ' Open sPath & sPeriod(iPeriod) & "\" & sSymbol & ".txt" For Input As iFile
+    Open sPath & sPeriod(iPeriod) & "\" & sSymbol & ".txt" For Input As iFile
+        sMyDummy = Input$(LOF(iFile), #iFile)
+    Close iFile
+
+    iMyLines = Split(sMyDummy, vbLf)
+
+    num_rows = UBound(iMyLines)
+    oneline = Split(iMyLines(0), ",")
+    num_cols = UBound(oneline)
+    online = Split(iMyLines(0), ",")
+    
+    lCounter = 0
+    
+    Do
+    
+        DoEvents
+
+        lCounter = lCounter + 1
+        online = Split(iMyLines(lCounter), ",")
+        sDate = online(0)
+        dOpen = online(1)
+        dHigh = online(2)
+        dLow = online(3)
+        dClose = online(4)
+        lVolumeInput = online(5)
+        dAdjClose = online(6)
+        
+        Hist(lCounter).Date = Format(sDate, "m/d/yyyy")
+        Hist(lCounter).Open = dOpen
+        Hist(lCounter).High = dHigh
+        Hist(lCounter).Low = dLow
+        Hist(lCounter).Close = dAdjClose
+        Hist(lCounter).Close = dClose
+        Hist(lCounter).Volume = lVolumeInput
+        If lCounter = 5000 Then Exit Do
+        If lCounter >= num_rows - 1 Then Exit Do
+      '  If lCounter > MaxSize - 1 Then Exit Do
+        
+    '    Debug.Print lCounter, Hist(lCounter).Date; Hist(lCounter).Open, Hist(lCounter).High, Hist(lCounter).Low, Hist(lCounter).Close, Hist(lCounter).Volume
+    Loop
+    
+End Sub
