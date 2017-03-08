@@ -22,7 +22,7 @@ Sub Main()
     CreateDailyResults
     CreateWeeklyResults
     'CreateSummary
-    SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals-2.xls"
+    'SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals-2.xls"
 
 End Sub
 Sub CreateSummary()
@@ -400,9 +400,9 @@ Sub CreateWeeklyResults()
 '            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
 '        End If
         
-        ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
-        ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
-        ExcelSheet.Cells(lRow, 15).Value = rstOptions!EPSDate
+        'ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
+        'ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
+       ' ExcelSheet.Cells(lRow, 15).Value = rstOptions!EPSDate
         
 '        If rstOptions!ExDate < (Date - 1) + 5 Then
 '            If rstOptions!ExDate > Date - 1 Then
@@ -726,9 +726,9 @@ Debug.Print sSymbol
         rstOptions!LastPrice = Format(Hist(1).Close, "#,##0.00")
         rstOptions!NetChange = Format(Hist(1).Close - Hist(2).Close, "##0.00")
         rstOptions!TechIndex = lPoints
-        rstOptions!Sector = sSector
-        rstOptions!ExDate = dtDivDate
-        rstOptions!EPSDate = dtEarnDate
+        'rstOptions!Sector = sSector
+        'rstOptions!ExDate = dtDivDate
+        'rstOptions!EPSDate = dtEarnDate
         rstOptions!PctChange = Format(((Hist(1).Close - Hist(2).Close) / Hist(2).Close) * 100, "#,##0.0")
         rstOptions!DMA5 = Format(dDMA5, "##0.00")
         rstOptions!DMA20 = Format(dDMA20, "##0.00")
@@ -842,9 +842,9 @@ Debug.Print sSymbol
 '            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
 '        End If
         
-        ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
-        ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
-        ExcelSheet.Cells(lRow, 15).Value = rstOptions!EPSDate
+        'ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
+        'ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
+        'ExcelSheet.Cells(lRow, 15).Value = rstOptions!EPSDate
         
 '        If rstOptions!ExDate < (Date - 1) + 5 Then
 '            If rstOptions!ExDate > Date - 1 Then
@@ -1313,7 +1313,7 @@ Sub GetPublicPrices(sSymbol As String, iPeriod As Integer)
     Dim lVolumeInput        As Long
     Dim dAdjClose           As Double
 
-    sPath = "c:\PublicStockData\"
+    sPath = "c:\prices\"
  '
     sPeriod(1) = "Daily"
     sPeriod(2) = "Weekly"
