@@ -20,7 +20,7 @@ Sub Main()
 
     'CheckForHoliday
     CreateDailyResults
-    CreateWeeklyResults
+    'CreateWeeklyResults
     'CreateSummary
     'SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals-2.xls"
 
@@ -577,7 +577,7 @@ Sub CreateDailyResults()
     rstStockList.LockType = adLockOptimistic
     Set cmdStockList.ActiveConnection = cnnl
     
-    ExcelSheet.Range("b3:zz500").Delete
+    'ExcelSheet.Range("b3:zz500").Delete
     
     cmdStockList.CommandText = "Select * From StockList Where Symbol <>'zzz1234';"
     Set rstStockList = cmdStockList.Execute
