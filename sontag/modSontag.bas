@@ -16,16 +16,71 @@ Type Historic
 End Type
 Global Hist(300) As Historic
 
+Private Declare Function DeleteFile Lib "kernel32" Alias "DeleteFileA" _
+                        (ByVal lpFileName As String) _
+                         As Long
+
 Sub Main()
 
     'CheckForHoliday
-    CreateDailyResults
-    'CreateWeeklyResults
-    'CreateSummary
-    'SendReport "Open attachment", "Technicals", "SontagTechnicals", "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals-2.xls"
+    'right is to create a work book in each case and copy it into the new one, need to pass in workbook that is open
+    Set ExcelApp = CreateObject("Excel.Application")
+    Dim ExcelWorkBook       As Excel.Workbook
+    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\TechnicalsTemplate.xls")
+
+    CreateDailyResults ExcelWorkBook.Worksheets(1)
+    CreateWeeklyResults ExcelWorkBook.Worksheets(2)
+    'CreateSummary ExcelWorkBook.Worksheets(3)
+    'CreateMonthly ExcelWorkBook.Worksheets(4)
+
+    Dim OutFileName As String
+    OutFileName = "c:\Users\scott\refdatavb6\sontag\sontagtechnicals.xls"
+    Excel.Application.DisplayAlerts = False
+    ExcelWorkBook.Application.DisplayAlerts = False
+    ExcelWorkBook.SaveAs (OutFileName)
+    ExcelWorkBook.Close SaveChanges = True
+    ExcelApp.Application.Quit
+    Excel.Application.Quit
+   
+    SendReport "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals.xls"
 
 End Sub
-Sub CreateSummary()
+Sub SendReport(sAttach As String)
+    Dim sMailTo             As String
+    Dim cdoMsg As New CDO.Message
+    Dim cdoConf As New CDO.Configuration
+    Dim Flds
+    Const cdoSendUsingPort = 2
+    Set iMsg = CreateObject("CDO.Message")
+    Set iConf = CreateObject("CDO.Configuration")
+   
+    iConf.Load -1
+    Set Flds = iConf.Fields
+    
+     With Flds
+        .Item("http://schemas.microsoft.com/cdo/configuration/smtpusessl") = True
+        .Item("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = 1
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendusername") = "scottandsophia@gmail.com"
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = "dmxs62gr"
+        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp.gmail.com" 'smtp mail server
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
+        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 465 'stmp server
+        .Update
+    End With
+
+    If Trim(sAttach) <> "" Then
+        iMsg.AddAttachment sAttach
+    End If
+    With iMsg
+        Set .Configuration = iConf
+        .To = "scottandsophia@gmail.com,mkscapitalconsulting@yahoo.com"
+        .From = "Increasing Alpha<scottandsophia@gmail.com>"
+        .Subject = "Technical Indicators"
+        .HTMLBody = "Technical Data"
+        .Send
+    End With
+End Sub
+Sub CreateSummary(ByRef ExcelSheet As Excel.Worksheet)
 
     '-----------------------------------------------------------------------------------------------------------------------------
     ' This routine creates the summary page and writes the results for the short-term (daily) and intermediate-term (weekly)
@@ -41,15 +96,6 @@ Sub CreateSummary()
     Dim lWeeklySignal       As Long
     Dim lMonthlySignal      As Long
     Dim lCompSignal         As Long
-    
-    Dim ExcelApp            As Excel.Application
-    Dim ExcelWorkBook       As Excel.Workbook
-    Dim ExcelSheet          As Excel.Worksheet
-    Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-2.xls")
-    Set ExcelSheet = ExcelWorkBook.Worksheets(2)
-        
-'MsgBox "got here 1"
         
     Dim cnnl As New ADODB.Connection
     Dim rstOptions As ADODB.Recordset
@@ -62,8 +108,6 @@ Sub CreateSummary()
     Set cmdChange.ActiveConnection = cnnl
     rstOptions.CursorType = adOpenDynamic
     rstOptions.LockType = adLockOptimistic
-    
-'MsgBox "got here 2"
 
     Dim rstStockList As ADODB.Recordset
     Dim cmdStockList As ADODB.Command
@@ -76,14 +120,9 @@ Sub CreateSummary()
     ExcelApp.Application.Quit
     
 End Sub
-Sub CreateWeeklyResults()
-
-    '-----------------------------------------------------------------------------------------------------------------------------------
-    ' This routine goes through the database of stocks and creates the data and signals for each and writes the results to the
-    ' database table.
-    '-----------------------------------------------------------------------------------------------------------------------------------
+Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
     
-    On Error Resume Next
+    On Error GoTo ShowErrorWeekly:
     
     Dim sSymbol             As String * 15
     Dim dLastPrice          As Double
@@ -118,12 +157,6 @@ Sub CreateWeeklyResults()
     Dim lCounter            As Double
     Dim lPoints             As Long
     
-    Dim ExcelApp            As Excel.Application
-    Dim ExcelWorkBook       As Excel.Workbook
-    Dim ExcelSheet          As Excel.Worksheet
-    Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-1.xls")
-    Set ExcelSheet = ExcelWorkBook.Worksheets(2)
 ' MsgBox "got here 3"
  
     Dim cnnl As New ADODB.Connection
@@ -147,16 +180,29 @@ Sub CreateWeeklyResults()
     rstStockList.LockType = adLockOptimistic
     Set cmdStockList.ActiveConnection = cnnl
     
+    cmdStockList.CommandText = "Select count(*) as test From StockList Where Symbol <>'zzz1234';"
+    Set rstStockList = cmdStockList.Execute
+    rstStockList.MoveFirst
+    Dim counter As Integer
+    counter = rstStockList!test
+    Debug.Print "number of records weekly stock is " & counter
+    
     cmdStockList.CommandText = "Select * From StockList Where Symbol <>'zzz1234';"
     Set rstStockList = cmdStockList.Execute
     
     rstStockList.MoveFirst
+    Dim rc As Integer
+    rc = 1
+    
+    Dim ts As Date
+    ts = Format(Now, "mm/dd/yyyy h:mm:ss")
     
     Do While Not rstStockList.EOF
     
         DoEvents
         
         sSymbol = rstStockList!Symbol
+        Debug.Print "weekly at symbol " & sSymbol & " count=" & rc & " of total=" & counter
         dtDivDate = none
         dtExDate = ""
         lPoints = 0
@@ -280,7 +326,7 @@ Sub CreateWeeklyResults()
         End If
         
         rstOptions.AddNew
-        rstOptions!SignalDate = Format(Date, "mm/dd/yyyy")
+        rstOptions!signalDate = ts
         rstOptions!Symbol = sSymbol
         rstOptions!LastPrice = Format(Hist(1).Close, "#,##0.00")
         rstOptions!NetChange = Format(Hist(1).Close - Hist(2).Close, "##0.00")
@@ -303,12 +349,18 @@ Sub CreateWeeklyResults()
         rstOptions!ChaikenOsc = Format(dChaikenOsc(1), "#00.00")
         rstOptions!ChaikenOscString = sChaikenOscString
         rstOptions.Update
-        
+        rc = rc + 1
         rstStockList.MoveNext
         
     Loop
      
-    cmdChange.CommandText = "Select * From WeeklyTechnicals Where SignalDate=#" & Format(Date, "mm/dd/yyyy") & "#;"
+    cmdChange.CommandText = "Select * From WeeklyTechnicals Where SignalDate=#" & ts & "#;"
+    Set rstOptions = cmdChange.Execute
+    rstOptions.MoveFirst
+    counter = rstOptions!test
+    
+    Debug.Print "total weekly records in loop 2 = " & counter
+    cmdChange.CommandText = "Select * From WeeklyTechnicals Where SignalDate=#" & ts & "#;"
     Set rstOptions = cmdChange.Execute
     rstOptions.MoveFirst
     
@@ -321,7 +373,7 @@ Sub CreateWeeklyResults()
         DoEvents
         
         lRow = lRow + 1
-        
+        Debug.Print "weekly at symbol=" & rstOptions!Symbol & " count=" & lRow - 3 & " of total=" & counter
         ExcelSheet.Cells(lRow, 1).Value = rstOptions!Symbol
         ExcelSheet.Cells(lRow, 3).Value = Format(rstOptions!LastPrice, "#,##0.00")
         ExcelSheet.Cells(lRow, 4).Value = Format(rstOptions!NetChange, "##0.00")
@@ -329,76 +381,76 @@ Sub CreateWeeklyResults()
         ExcelSheet.Cells(lRow, 6).Value = Format(rstOptions!TechIndex, "##0.00")
         ExcelSheet.Cells(lRow, 7).Value = Format(rstOptions!DMASignal, "##.0")
         
-'        If rstOptions!DMASignal > 2 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!DMASignal > -2 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 255, 0)
-'        ElseIf rstOptions!DMASignal < -1 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!DMASignal > 2 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!DMASignal > -2 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 255, 0)
+        ElseIf rstOptions!DMASignal < -1 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 0, 0)
+        End If
         
-'        If rstOptions!TechIndex > 9 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(113, 215, 69)
-'        ElseIf rstOptions!TechIndex > 7 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(106, 202, 65)
-'        ElseIf rstOptions!TechIndex > 5 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(11, 220, 11)
-'        ElseIf rstOptions!TechIndex > 3 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(54, 236, 54)
-'        ElseIf rstOptions!TechIndex > 0 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!TechIndex < -9 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 0, 0)
-'        ElseIf rstOptions!TechIndex < -7 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(200, 0, 0)
-'        ElseIf rstOptions!TechIndex < -5 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(150, 0, 0)
-'        ElseIf rstOptions!TechIndex < -3 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(125, 0, 0)
-'        ElseIf rstOptions!TechIndex < 0 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(80, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 255, 255)
-'        End If
+        If rstOptions!TechIndex > 9 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(113, 215, 69)
+        ElseIf rstOptions!TechIndex > 7 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(106, 202, 65)
+        ElseIf rstOptions!TechIndex > 5 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(11, 220, 11)
+        ElseIf rstOptions!TechIndex > 3 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(54, 236, 54)
+        ElseIf rstOptions!TechIndex > 0 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!TechIndex < -9 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 0, 0)
+        ElseIf rstOptions!TechIndex < -7 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(200, 0, 0)
+        ElseIf rstOptions!TechIndex < -5 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(150, 0, 0)
+        ElseIf rstOptions!TechIndex < -3 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(125, 0, 0)
+        ElseIf rstOptions!TechIndex < 0 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(80, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 255, 255)
+        End If
         
         GetWeeklySignal rstOptions!Symbol, "MACD", sSignal, dtSignalDate
         ExcelSheet.Cells(lRow, 8).Value = rstOptions!MACDSignalString
         If dtSignalDate <> #12:00:00 AM# Then
             ExcelSheet.Cells(lRow, 9).Value = dtSignalDate
         End If
-'        If rstOptions!MACDSignalString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!MACDSignalString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!MACDSignalString = "Positive" Then
+            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!MACDSignalString = "Negative" Then
+            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(255, 0, 0)
+        End If
         
         GetWeeklySignal rstOptions!Symbol, "Chaiken Oscillator", sSignal, dtSignalDate
         ExcelSheet.Cells(lRow, 10).Value = rstOptions!ChaikenOscString
         If dtSignalDate <> #12:00:00 AM# Then
             ExcelSheet.Cells(lRow, 11).Value = dtSignalDate
         End If
-'        If rstOptions!ChaikenOscString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenOscString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!ChaikenOscString = "Positive" Then
+            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenOscString = "Negative" Then
+            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(255, 0, 0)
+        End If
         
         GetWeeklySignal rstOptions!Symbol, "Chaiken Money Flow", sSignal, dtSignalDate
         ExcelSheet.Cells(lRow, 12).Value = rstOptions!ChaikenMoneyFlowString
         If dtSignalDate <> #12:00:00 AM# Then
             ExcelSheet.Cells(lRow, 13).Value = dtSignalDate
         End If
-'        If rstOptions!ChaikenMoneyFlowString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenMoneyFlowString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!ChaikenMoneyFlowString = "Positive" Then
+            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenMoneyFlowString = "Negative" Then
+            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
+        End If
         
         'ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
         'ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
@@ -431,54 +483,54 @@ Sub CreateWeeklyResults()
         End If
         
         ExcelSheet.Cells(lRow, 18).Value = Format(rstOptions!DMA20, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA20 Then
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA20 Then
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 0, 0)
-'        End If
+        If rstOptions!LastPrice > rstOptions!DMA20 Then
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA20 Then
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 0, 0)
+        End If
         
         ExcelSheet.Cells(lRow, 19).Value = Format(rstOptions!DMA50, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA50 Then
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA50 Then
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 0, 0)
-'        End If
+        If rstOptions!LastPrice > rstOptions!DMA50 Then
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA50 Then
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 0, 0)
+        End If
         
         ExcelSheet.Cells(lRow, 20).Value = Format(rstOptions!DMA150, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA150 Then
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA150 Then
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 0, 0)
-'        End If
+        If rstOptions!LastPrice > rstOptions!DMA150 Then
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA150 Then
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 0, 0)
+        End If
                 
         ExcelSheet.Cells(lRow, 21).Value = Format(rstOptions!DMA200, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA200 Then
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA200 Then
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 0, 0)
-'        End If
+        If rstOptions!LastPrice > rstOptions!DMA200 Then
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA200 Then
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 0, 0)
+        End If
         
         ExcelSheet.Cells(lRow, 22).Value = Format(rstOptions!ChaikenOsc, "#,##0.00")
-'        If rstOptions!ChaikenOsc > 0 Then
-'            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenOsc < 0 Then
-'            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!ChaikenOsc > 0 Then
+            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenOsc < 0 Then
+            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(255, 0, 0)
+        End If
         
         ExcelSheet.Cells(lRow, 23).Value = Format(rstOptions!ChaikenMoneyFlow, "#,##0.00")
-'        If rstOptions!ChaikenMoneyFlow > 0 Then
-'            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenMoneyFlow < 0 Then
-'            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(255, 0, 0)
-'        End If
+        If rstOptions!ChaikenMoneyFlow > 0 Then
+            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenMoneyFlow < 0 Then
+            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(255, 0, 0)
+        End If
     
         rstOptions.MoveNext
         
@@ -489,32 +541,16 @@ Sub CreateWeeklyResults()
     ExcelSheet.Range("d3:d" & lRow).NumberFormat = "##0.0"
     ExcelSheet.Range("q3:u" & lRow).NumberFormat = "#,##0.00"
     ExcelSheet.Range("n3:o" & lRow).NumberFormat = "MM/DD/YYYY"
-    
-    
     ExcelSheet.EnableAutoFilter = True
-    ExcelWorkBook.SaveCopyAs ("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-2.xls")
-    ExcelWorkBook.Close savechanges = False
-    Excel.Application.Quit
-    ExcelApp.Application.Quit
-    Set ExcelApp = Nothing
-    Set ExcelWorkBook = Nothing
-    Set excelworksheet = Nothing
-'    ExcelWorkBook.Close savechanges = False
-    Set ExcelApp = Nothing
-    Set ExcelWorkBook = Nothing
-    Set excelworksheet = Nothing
-    
+    Exit Sub
+ShowErrorWeekly:
+    If Err = 6 Then Resume Next
+    'MsgBox Err & " " & Error$ & " " & sSymbol
+    Debug.Print Err & " " & Error$ & " " & sSymbol
+    Resume Next
 End Sub
-Sub CreateDailyResults()
-
-    '-----------------------------------------------------------------------------------------------------------------------------------
-    ' This routine goes through the database of stocks and creates the data and signals for each and writes the results to the
-    ' database table.
-    '-----------------------------------------------------------------------------------------------------------------------------------
-    
-  '  On Error Resume Next
+Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
     On Error GoTo ShowError:
-    
     Dim sSymbol             As String * 15
     Dim dLastPrice          As Double
     Dim dNetChange          As Double
@@ -548,13 +584,6 @@ Sub CreateDailyResults()
     Dim lCounter            As Long
     Dim lPoints             As Double
     Dim iDataCount          As Integer
-    
-    Dim ExcelApp            As Excel.Application
-    Dim ExcelWorkBook       As Excel.Workbook
-    Dim ExcelSheet          As Excel.Worksheet
-    Set ExcelApp = CreateObject("Excel.Application")
-    Set ExcelWorkBook = ExcelApp.Workbooks.Open("c:\Users\scott\refdatavb6\sontag\sontagtechnicals.xls")
-    Set ExcelSheet = ExcelWorkBook.Worksheets(1)
  
     Dim cnnl As New ADODB.Connection
     Dim rstOptions As ADODB.Recordset
@@ -568,7 +597,6 @@ Sub CreateDailyResults()
     rstOptions.CursorType = adOpenDynamic
     rstOptions.LockType = adLockOptimistic
     rstOptions.Open "DailyTechnicals", cnnl, , , adCmdTable
-
     Dim rstStockList As ADODB.Recordset
     Dim cmdStockList As ADODB.Command
     Set rstStockList = New ADODB.Recordset
@@ -578,18 +606,26 @@ Sub CreateDailyResults()
     Set cmdStockList.ActiveConnection = cnnl
     
     'ExcelSheet.Range("b3:zz500").Delete
-    
+    cmdStockList.CommandText = "Select count(*) as test From StockList Where Symbol <>'zzz1234';"
+    Set rstStockList = cmdStockList.Execute
+    rstStockList.MoveFirst
+    Dim countRecords As Integer
+    countRecords = rstStockList!test
     cmdStockList.CommandText = "Select * From StockList Where Symbol <>'zzz1234';"
     Set rstStockList = cmdStockList.Execute
     
+    Debug.Print "count of records:" & countRecords
+    Dim ts As Date
+    ts = Format(Now, "mm/dd/yyyy h:mm:ss")
     rstStockList.MoveFirst
-    
+    lRow = 1
     Do While Not rstStockList.EOF
-    
+        lRow = lRow + 1
         DoEvents
         
         sSymbol = Trim(rstStockList!Symbol)
-Debug.Print sSymbol
+        'Debug.Print sSymbol
+        Debug.Print "daily stocklist loop index: " & lRow & " out of " & countRecords & " symbol=" & sSymbol
 
         dtDivDate = none
         dtExDate = ""
@@ -721,7 +757,7 @@ Debug.Print sSymbol
         End If
         
         rstOptions.AddNew
-        rstOptions!SignalDate = Format(Date, "mm/dd/yyyy")
+        rstOptions!signalDate = ts
         rstOptions!Symbol = sSymbol
         rstOptions!LastPrice = Format(Hist(1).Close, "#,##0.00")
         rstOptions!NetChange = Format(Hist(1).Close - Hist(2).Close, "##0.00")
@@ -749,7 +785,12 @@ Debug.Print sSymbol
         
     Loop
      
-    cmdChange.CommandText = "Select * From DailyTechnicals Where SignalDate=#" & Format(Date, "mm/dd/yyyy") & "#;"
+    cmdStockList.CommandText = "Select count(*) From DailyTechnicals Where SignalDate=#" & ts & "#;"
+    Set rstStockList = cmdStockList.Execute
+    rstStockList.MoveFirst
+    countRecords = rstStockList!test
+    
+    cmdChange.CommandText = "Select * From DailyTechnicals Where SignalDate=#" & ts & "#;"
     Set rstOptions = cmdChange.Execute
     rstOptions.MoveFirst
     
@@ -758,94 +799,96 @@ Debug.Print sSymbol
     
     lRow = 3
     
-    Do While Not rstOptions.EOF
+    Debug.Print "rstOptions count of records:" & countRecords & "at time=" & ts
     
+    Do While Not rstOptions.EOF
         DoEvents
-        
+
         lRow = lRow + 1
-        
+        Debug.Print "daily rst loop index: " & lRow - 3 & " out of " & countRecords & " symbol=" & rstOptions!Symbol
+
         ExcelSheet.Cells(lRow, 1).Value = rstOptions!Symbol
         ExcelSheet.Cells(lRow, 3).Value = Format(rstOptions!LastPrice, "#,##0.00")
         ExcelSheet.Cells(lRow, 4).Value = Format(rstOptions!NetChange, "##0.00")
         ExcelSheet.Cells(lRow, 5).Value = Format(rstOptions!PctChange, "##0.0")
         ExcelSheet.Cells(lRow, 6).Value = Format(rstOptions!TechIndex, "##0.00")
         ExcelSheet.Cells(lRow, 7).Value = Format(rstOptions!DMASignal, "#0.00")
-        
-'        If rstOptions!DMASignal > 2 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!DMASignal > -2 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 255, 0)
-'        ElseIf rstOptions!DMASignal < -1 Then
-'            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 0, 0)
-'        End If
-        
-'        If rstOptions!TechIndex > 9 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(113, 215, 69)
-'        ElseIf rstOptions!TechIndex > 7 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(106, 202, 65)
-'        ElseIf rstOptions!TechIndex > 5 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(11, 220, 11)
-'        ElseIf rstOptions!TechIndex > 3 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(54, 236, 54)
-'        ElseIf rstOptions!TechIndex > 0 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!TechIndex < -9 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 0, 0)
-'        ElseIf rstOptions!TechIndex < -7 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(200, 0, 0)
-'        ElseIf rstOptions!TechIndex < -5 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(150, 0, 0)
-'        ElseIf rstOptions!TechIndex < -3 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(125, 0, 0)
-'        ElseIf rstOptions!TechIndex < 0 Then
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(80, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 255, 255)
-'        End If
-        
+
+        If rstOptions!DMASignal > 2 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!DMASignal > -2 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 255, 0)
+        ElseIf rstOptions!DMASignal < -1 Then
+            ExcelSheet.Cells(lRow, 7).Interior.Color = RGB(255, 0, 0)
+        End If
+
+        If rstOptions!TechIndex > 9 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(113, 215, 69)
+        ElseIf rstOptions!TechIndex > 7 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(106, 202, 65)
+        ElseIf rstOptions!TechIndex > 5 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(11, 220, 11)
+        ElseIf rstOptions!TechIndex > 3 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(54, 236, 54)
+        ElseIf rstOptions!TechIndex > 0 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!TechIndex < -9 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 0, 0)
+        ElseIf rstOptions!TechIndex < -7 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(200, 0, 0)
+        ElseIf rstOptions!TechIndex < -5 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(150, 0, 0)
+        ElseIf rstOptions!TechIndex < -3 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(125, 0, 0)
+        ElseIf rstOptions!TechIndex < 0 Then
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(80, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 6).Interior.Color = RGB(255, 255, 255)
+        End If
+
         GetSignal rstOptions!Symbol, "MACD", sSignal, dtSignalDate
         ExcelSheet.Cells(lRow, 8).Value = rstOptions!MACDSignalString
         If dtSignalDate <> #12:00:00 AM# Then
             ExcelSheet.Cells(lRow, 9).Value = dtSignalDate
         End If
-'        If rstOptions!MACDSignalString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!MACDSignalString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(255, 0, 0)
-'        End If
-        
+        If rstOptions!MACDSignalString = "Positive" Then
+            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!MACDSignalString = "Negative" Then
+            ExcelSheet.Cells(lRow, 8).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 9).Interior.Color = RGB(255, 0, 0)
+        End If
+
         GetSignal rstOptions!Symbol, "Chaiken Oscillator", sSignal, dtSignalDate
         ExcelSheet.Cells(lRow, 10).Value = rstOptions!ChaikenOscString
         If dtSignalDate <> #12:00:00 AM# Then
             ExcelSheet.Cells(lRow, 11).Value = dtSignalDate
         End If
-'        If rstOptions!ChaikenOscString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenOscString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(255, 0, 0)
-'        End If
-'
-'        GetSignal rstOptions!Symbol, "Chaiken Money Flow", sSignal, dtSignalDate
-'        ExcelSheet.Cells(lRow, 12).Value = rstOptions!ChaikenMoneyFlowString
-'        If dtSignalDate <> #12:00:00 AM# Then
-'            ExcelSheet.Cells(lRow, 13).Value = dtSignalDate
-'        End If
-'        If rstOptions!ChaikenMoneyFlowString = "Positive" Then
-'            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(0, 255, 0)
-'            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenMoneyFlowString = "Negative" Then
-'            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(255, 0, 0)
-'            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
-'        End If
-        
+        If rstOptions!ChaikenOscString = "Positive" Then
+            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenOscString = "Negative" Then
+            ExcelSheet.Cells(lRow, 10).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 11).Interior.Color = RGB(255, 0, 0)
+        End If
+
+        GetSignal rstOptions!Symbol, "Chaiken Money Flow", sSignal, dtSignalDate
+        ExcelSheet.Cells(lRow, 12).Value = rstOptions!ChaikenMoneyFlowString
+        If dtSignalDate <> #12:00:00 AM# Then
+            ExcelSheet.Cells(lRow, 13).Value = dtSignalDate
+        End If
+        If rstOptions!ChaikenMoneyFlowString = "Positive" Then
+            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(0, 255, 0)
+            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenMoneyFlowString = "Negative" Then
+            ExcelSheet.Cells(lRow, 12).Interior.Color = RGB(255, 0, 0)
+            ExcelSheet.Cells(lRow, 13).Interior.Color = RGB(255, 0, 0)
+        End If
+
         'ExcelSheet.Cells(lRow, 2).Value = rstOptions!Sector
         'ExcelSheet.Cells(lRow, 14).Value = rstOptions!ExDate
         'ExcelSheet.Cells(lRow, 15).Value = rstOptions!EPSDate
-        
+
 '        If rstOptions!ExDate < (Date - 1) + 5 Then
 '            If rstOptions!ExDate > Date - 1 Then
 '                ExcelSheet.Cells(lRow, 14).Interior.Color = RGB(255, 0, 0)
@@ -861,69 +904,68 @@ Debug.Print sSymbol
 '        ElseIf rstOptions!EPSDate = Date - 1 Then
 '            ExcelSheet.Cells(lRow, 15).Interior.Color = RGB(0, 255, 0)
 '        End If
-            
-    
+
+
         ExcelSheet.Cells(lRow, 17).Value = Format(rstOptions!DMA5, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA5 Then
-'            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA5 Then
-'            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(0, 0, 0)
-'        End If
-        
+        If rstOptions!LastPrice > rstOptions!DMA5 Then
+            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA5 Then
+            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 17).Interior.Color = RGB(0, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 18).Value = Format(rstOptions!DMA20, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA20 Then
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA20 Then
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 0, 0)
-'        End If
-        
+        If rstOptions!LastPrice > rstOptions!DMA20 Then
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA20 Then
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 18).Interior.Color = RGB(0, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 19).Value = Format(rstOptions!DMA50, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA50 Then
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA50 Then
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 0, 0)
-'        End If
-        
+        If rstOptions!LastPrice > rstOptions!DMA50 Then
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA50 Then
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 19).Interior.Color = RGB(0, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 20).Value = Format(rstOptions!DMA150, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA150 Then
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA150 Then
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 0, 0)
-'        End If
-                
+        If rstOptions!LastPrice > rstOptions!DMA150 Then
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA150 Then
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 20).Interior.Color = RGB(0, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 21).Value = Format(rstOptions!DMA200, "#,##0.00")
-'        If rstOptions!LastPrice > rstOptions!DMA200 Then
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!LastPrice < rstOptions!DMA200 Then
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(255, 0, 0)
-'        Else
-'            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 0, 0)
-'        End If
-        
+        If rstOptions!LastPrice > rstOptions!DMA200 Then
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!LastPrice < rstOptions!DMA200 Then
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(255, 0, 0)
+        Else
+            ExcelSheet.Cells(lRow, 21).Interior.Color = RGB(0, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 22).Value = Format(rstOptions!ChaikenOsc, "#,##0.00")
-'        If rstOptions!ChaikenOsc > 0 Then
-'            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenOsc < 0 Then
-'            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(255, 0, 0)
-'        End If
-        
+        If rstOptions!ChaikenOsc > 0 Then
+            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenOsc < 0 Then
+            ExcelSheet.Cells(lRow, 22).Interior.Color = RGB(255, 0, 0)
+        End If
+
         ExcelSheet.Cells(lRow, 23).Value = Format(rstOptions!ChaikenMoneyFlow, "#,##0.00")
-'        If rstOptions!ChaikenMoneyFlow > 0 Then
-'            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(0, 255, 0)
-'        ElseIf rstOptions!ChaikenMoneyFlow < 0 Then
-'            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(255, 0, 0)
-'        End If
-    
+        If rstOptions!ChaikenMoneyFlow > 0 Then
+            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(0, 255, 0)
+        ElseIf rstOptions!ChaikenMoneyFlow < 0 Then
+            ExcelSheet.Cells(lRow, 23).Interior.Color = RGB(255, 0, 0)
+        End If
+
         rstOptions.MoveNext
-        
     Loop
     
     ExcelSheet.Range("b3:b" & lRow).NumberFormat = "#,##0.00"
@@ -932,26 +974,15 @@ Debug.Print sSymbol
     ExcelSheet.Range("q3:u" & lRow).NumberFormat = "#,##0.00"
     ExcelSheet.Range("n3:o" & lRow).NumberFormat = "MM/DD/YYYY"
     
-    
     ExcelSheet.EnableAutoFilter = True
-    ExcelWorkBook.SaveCopyAs ("c:\Users\scott\refdatavb6\sontag\sontagtechnicals-1.xls")
-    ExcelWorkBook.Close savechanges = False
-    Excel.Application.Quit
-    ExcelApp.Application.Quit
-    Set ExcelApp = Nothing
-    Set ExcelWorkBook = Nothing
-    Set excelworksheet = Nothing
-'    ExcelWorkBook.Close savechanges = False
-    Set ExcelApp = Nothing
-    Set ExcelWorkBook = Nothing
-    Set excelworksheet = Nothing
-    
     Exit Sub
     
 ShowError:
     If Err = 6 Then Resume Next
-    MsgBox Err & " " & Error$ & " " & sSymbol
+    'MsgBox Err & " " & Error$ & " " & sSymbol
+    Debug.Print Err & " " & Error$ & " " & sSymbol
     Resume Next
+    'Exit Sub
     
 End Sub
 Sub RecordSignal(sSymbol As String, sIndicator As String, sSignal As String)
@@ -1241,7 +1272,7 @@ Sub ChaikenOscillator(dOpen() As Double, dHigh() As Double, dLow() As Double, dC
         lCount = lCount - 1
         
         dADLine(lCount) = dADLine(lCount + 1) + dMFVolume(lCount)
-Debug.Print dADLine(lCount), dMFVolume(lCount)
+        'Debug.Print dADLine(lCount), dMFVolume(lCount)
         If lCount < 497 Then
             
             dEMA3(lCount) = dADLine(lCount) * (2 / (4)) + dEMA3(lCount + 1) * (1 - (2 / (4)))
@@ -1267,7 +1298,7 @@ Debug.Print dADLine(lCount), dMFVolume(lCount)
         If lCount < 1 Then Exit Do
         
     Loop
-Debug.Print dOscillator(1)
+'Debug.Print dOscillator(1)
 'Stop
         
 End Sub
@@ -1284,11 +1315,11 @@ Function dSMA(lStart As Long, lPeriods As Long) As Double
         DoEvents
         lCount = lCount + 1
         dSMA = dSMA + Hist(lCount + lStart).Close
-'Debug.Print Hist(lCount).Close, lPeriods, dSMA, lCount
+        'Debug.Print Hist(lCount).Close, lPeriods, dSMA, lCount
         If lCount = (lPeriods) Then Exit Do
 
     Loop
-Debug.Print Hist(1).Close, dSMA, lPeriods, dSMA / lPeriods, lCount
+    'Debug.Print Hist(1).Close, dSMA, lPeriods, dSMA / lPeriods, lCount
     dSMA = dSMA / lPeriods
 'Stop
     
