@@ -154,99 +154,99 @@ Function SymbolFix(sOldSymbol As String) As String
     
 End Function
 
-Sub SendReport(sHTML As String, sSubject As String, sReportName As String, sAttach As String)
-
-    '----------------------------------------------------------------------------------
-    ' This routine takes the report generated and sends it to the distribution list
-    ' on the FTI MailGen database.
-    '----------------------------------------------------------------------------------
-    
-    Dim sMailTo             As String
-    
-    
-    Dim cnnl As New ADODB.Connection
-    Dim rstOptions As ADODB.Recordset
-    Dim rstSend    As ADODB.Recordset
-    Set cnnl = New ADODB.Connection
-    Dim cmdChange       As ADODB.Command
-    Dim cmdChangeSend   As ADODB.Command
-    cnnl.Open "DSN=MailGen"
-    cnnl.CommandTimeout = 100
-    Set rstOptions = New ADODB.Recordset
-    Set rstSend = New ADODB.Recordset
-    Set cmdChange = New ADODB.Command
-    Set cmdChange.ActiveConnection = cnnl
-    Set cmdChangeSend = New ADODB.Command
-    Set cmdChangeSend.ActiveConnection = cnnl
-    rstOptions.CursorType = adOpenDynamic
-    rstOptions.LockType = adLockOptimistic
-    rstSend.CursorType = adOpenDynamic
-    rstSend.LockType = adLockOptimistic
-    
-    cmdChange.CommandText = "Select * From MailDistList Where  " & sReportName & "=1;"
-    'MsgBox cmdChange.CommandText
-    Set rstOptions = cmdChange.Execute
-    
-    rstOptions.MoveFirst
-    
-        Dim cdoMsg As New CDO.Message
-    Dim cdoConf As New CDO.Configuration
-    Dim Flds
-    
-    Const cdoSendUsingPort = 2
-    
-    Set cdoMsg = CreateObject("CDO.Message")
-    Set cdoConf = CreateObject("CDO.Configuration")
-    
-    Set Flds = cdoConf.Fields
-        
-    With Flds
-        .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2 '
-        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp-server.si.rr.com"
-        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 25
-        .Item("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = cdoBasic
-        .Item("http://schemas.microsoft.com/cdo/configuration/sendusername") = "sfullman"
-        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = "j1ngles1"
-    .Update
-    End With
- ' MsgBox sAttach
-    If Trim(sAttach) <> "" Then
-        cdoMsg.AddAttachment sAttach
-    End If
-    
-    Do While Not rstOptions.EOF
-        DoEvents
-    
-    ' Apply the settings to the message.
-        With cdoMsg
-            Set .Configuration = cdoConf
-            .To = rstOptions!UserID
-            '.CC = "sfullman@si.rr.com"
-            .From = "Increasing Alpha<sfullman@si.rr.com>"
-            .Subject = sSubject
-            .HTMLBody = sHTML
-
-    '        If strCc <> "" Then .CC = strCc
-    '        If strBcc <> "" Then .BCC = strBcc
-            .Send
-    
-            
-        End With
-    
-        cmdChangeSend.CommandText = "Insert Into ReportsSent (UserID,  LastName, FirstName,Company,ReportName, ReportSentDate, ReportSentTime) Values ('"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!UserID & "','"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!LastName & "','"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!FirstName & "','"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!Company & "','"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & sReportName & "',#"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & Format(Date, "mm/dd/yyyy") & "#,#"
-        cmdChangeSend.CommandText = cmdChangeSend.CommandText & Format(Time, "hh:mm:ss") & "#);"
-        Set rstSend = cmdChangeSend.Execute
-        rstOptions.MoveNext
-    
-    Loop
-        
-End Sub
+'Sub SendReport(sHTML As String, sSubject As String, sReportName As String, sAttach As String)
+'
+'    '----------------------------------------------------------------------------------
+'    ' This routine takes the report generated and sends it to the distribution list
+'    ' on the FTI MailGen database.
+'    '----------------------------------------------------------------------------------
+'
+'    Dim sMailTo             As String
+'
+'
+'    Dim cnnl As New ADODB.Connection
+'    Dim rstOptions As ADODB.Recordset
+'    Dim rstSend    As ADODB.Recordset
+'    Set cnnl = New ADODB.Connection
+'    Dim cmdChange       As ADODB.Command
+'    Dim cmdChangeSend   As ADODB.Command
+'    cnnl.Open "DSN=MailGen"
+'    cnnl.CommandTimeout = 100
+'    Set rstOptions = New ADODB.Recordset
+'    Set rstSend = New ADODB.Recordset
+'    Set cmdChange = New ADODB.Command
+'    Set cmdChange.ActiveConnection = cnnl
+'    Set cmdChangeSend = New ADODB.Command
+'    Set cmdChangeSend.ActiveConnection = cnnl
+'    rstOptions.CursorType = adOpenDynamic
+'    rstOptions.LockType = adLockOptimistic
+'    rstSend.CursorType = adOpenDynamic
+'    rstSend.LockType = adLockOptimistic
+'
+'    cmdChange.CommandText = "Select * From MailDistList Where  " & sReportName & "=1;"
+'    'MsgBox cmdChange.CommandText
+'    Set rstOptions = cmdChange.Execute
+'
+'    rstOptions.MoveFirst
+'
+'        Dim cdoMsg As New CDO.Message
+'    Dim cdoConf As New CDO.Configuration
+'    Dim Flds
+'
+'    Const cdoSendUsingPort = 2
+'
+'    Set cdoMsg = CreateObject("CDO.Message")
+'    Set cdoConf = CreateObject("CDO.Configuration")
+'
+'    Set Flds = cdoConf.Fields
+'
+'    With Flds
+'        .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2 '
+'        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp-server.si.rr.com"
+'        .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 25
+'        .Item("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = cdoBasic
+'        .Item("http://schemas.microsoft.com/cdo/configuration/sendusername") = "sfullman"
+'        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = "j1ngles1"
+'    .Update
+'    End With
+' ' MsgBox sAttach
+'    If Trim(sAttach) <> "" Then
+'        cdoMsg.AddAttachment sAttach
+'    End If
+'
+'    Do While Not rstOptions.EOF
+'        DoEvents
+'
+'    ' Apply the settings to the message.
+'        With cdoMsg
+'            Set .Configuration = cdoConf
+'            .To = rstOptions!UserID
+'            '.CC = "sfullman@si.rr.com"
+'            .From = "Increasing Alpha<sfullman@si.rr.com>"
+'            .Subject = sSubject
+'            .HTMLBody = sHTML
+'
+'    '        If strCc <> "" Then .CC = strCc
+'    '        If strBcc <> "" Then .BCC = strBcc
+'            .Send
+'
+'
+'        End With
+'
+'        cmdChangeSend.CommandText = "Insert Into ReportsSent (UserID,  LastName, FirstName,Company,ReportName, ReportSentDate, ReportSentTime) Values ('"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!UserID & "','"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!LastName & "','"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!FirstName & "','"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & rstOptions!Company & "','"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & sReportName & "',#"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & Format(Date, "mm/dd/yyyy") & "#,#"
+'        cmdChangeSend.CommandText = cmdChangeSend.CommandText & Format(Time, "hh:mm:ss") & "#);"
+'        Set rstSend = cmdChangeSend.Execute
+'        rstOptions.MoveNext
+'
+'    Loop
+'
+'End Sub
 
 Sub SendCustomReport(sHTML As String, sSubject As String, sReportName As String, sAttach As String, sEMailAddress As String, sCCAddress As String)
 

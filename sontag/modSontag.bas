@@ -73,7 +73,7 @@ Sub SendReport(sAttach As String)
     End If
     With iMsg
         Set .Configuration = iConf
-        .To = "scottandsophia@gmail.com,mkscapitalconsulting@yahoo.com"
+        .To = "scottandsophia@gmail.com,mkscapitalconsulting@yahoo.com,sfullman@fullmantech.com"
         .From = "Increasing Alpha<scottandsophia@gmail.com>"
         .Subject = "Technical Indicators"
         .HTMLBody = "Technical Data"
