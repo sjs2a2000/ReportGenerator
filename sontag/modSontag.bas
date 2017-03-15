@@ -21,7 +21,8 @@ Private Declare Function DeleteFile Lib "kernel32" Alias "DeleteFileA" _
                          As Long
 
 Sub Main()
-
+    'Write_stdout 'starting program'
+    Write_stdout ("starting program")
     'CheckForHoliday
     'right is to create a work book in each case and copy it into the new one, need to pass in workbook that is open
     Set ExcelApp = CreateObject("Excel.Application")
@@ -45,6 +46,13 @@ Sub Main()
     SendReport "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals.xls"
 
 End Sub
+Sub Write_stdout(MessageLine As String)
+  Open "vbstdout" For Append As #1
+  Print #1, MessageLine
+  Close #1
+End Sub
+
+ 
 Sub SendReport(sAttach As String)
     Dim sMailTo             As String
     Dim cdoMsg As New CDO.Message
@@ -185,7 +193,7 @@ Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
     rstStockList.MoveFirst
     Dim counter As Integer
     counter = rstStockList!test
-    Debug.Print "number of records weekly stock is " & counter
+    Write_stdout "number of records weekly stock is " & counter
     
     cmdStockList.CommandText = "Select * From StockList Where Symbol <>'zzz1234';"
     Set rstStockList = cmdStockList.Execute
@@ -202,7 +210,7 @@ Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
         DoEvents
         
         sSymbol = rstStockList!Symbol
-        Debug.Print "weekly at symbol " & sSymbol & " count=" & rc & " of total=" & counter
+        Write_stdout "weekly at symbol " & sSymbol & " count=" & rc & " of total=" & counter
         dtDivDate = none
         dtExDate = ""
         lPoints = 0
@@ -359,7 +367,7 @@ Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
     rstOptions.MoveFirst
     counter = rstOptions!test
     
-    Debug.Print "total weekly records in loop 2 = " & counter
+    Write_stdout "total weekly records in loop 2 = " & counter
     cmdChange.CommandText = "Select * From WeeklyTechnicals Where SignalDate=#" & ts & "#;"
     Set rstOptions = cmdChange.Execute
     rstOptions.MoveFirst
@@ -373,7 +381,7 @@ Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
         DoEvents
         
         lRow = lRow + 1
-        Debug.Print "weekly at symbol=" & rstOptions!Symbol & " count=" & lRow - 3 & " of total=" & counter
+        Write_stdout "weekly at symbol=" & rstOptions!Symbol & " count=" & lRow - 3 & " of total=" & counter
         ExcelSheet.Cells(lRow, 1).Value = rstOptions!Symbol
         ExcelSheet.Cells(lRow, 3).Value = Format(rstOptions!LastPrice, "#,##0.00")
         ExcelSheet.Cells(lRow, 4).Value = Format(rstOptions!NetChange, "##0.00")
@@ -546,7 +554,7 @@ Sub CreateWeeklyResults(ByRef ExcelSheet As Excel.Worksheet)
 ShowErrorWeekly:
     If Err = 6 Then Resume Next
     'MsgBox Err & " " & Error$ & " " & sSymbol
-    Debug.Print Err & " " & Error$ & " " & sSymbol
+    Write_stdout Err & " " & Error$ & " " & sSymbol
     Resume Next
 End Sub
 Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
@@ -614,7 +622,7 @@ Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
     cmdStockList.CommandText = "Select * From StockList Where Symbol <>'zzz1234';"
     Set rstStockList = cmdStockList.Execute
     
-    Debug.Print "count of records:" & countRecords
+    Write_stdout "count of records:" & countRecords
     Dim ts As Date
     ts = Format(Now, "mm/dd/yyyy h:mm:ss")
     rstStockList.MoveFirst
@@ -624,8 +632,8 @@ Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
         DoEvents
         
         sSymbol = Trim(rstStockList!Symbol)
-        'Debug.Print sSymbol
-        Debug.Print "daily stocklist loop index: " & lRow & " out of " & countRecords & " symbol=" & sSymbol
+        'Write_stdout sSymbol
+        Write_stdout "daily stocklist loop index: " & lRow & " out of " & countRecords & " symbol=" & sSymbol
 
         dtDivDate = none
         dtExDate = ""
@@ -799,13 +807,13 @@ Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
     
     lRow = 3
     
-    Debug.Print "rstOptions count of records:" & countRecords & "at time=" & ts
+    Write_stdout "rstOptions count of records:" & countRecords & "at time=" & ts
     
     Do While Not rstOptions.EOF
         DoEvents
 
         lRow = lRow + 1
-        Debug.Print "daily rst loop index: " & lRow - 3 & " out of " & countRecords & " symbol=" & rstOptions!Symbol
+        Write_stdout "daily rst loop index: " & lRow - 3 & " out of " & countRecords & " symbol=" & rstOptions!Symbol
 
         ExcelSheet.Cells(lRow, 1).Value = rstOptions!Symbol
         ExcelSheet.Cells(lRow, 3).Value = Format(rstOptions!LastPrice, "#,##0.00")
@@ -980,7 +988,7 @@ Sub CreateDailyResults(ByRef ExcelSheet As Excel.Worksheet)
 ShowError:
     If Err = 6 Then Resume Next
     'MsgBox Err & " " & Error$ & " " & sSymbol
-    Debug.Print Err & " " & Error$ & " " & sSymbol
+    Write_stdout Err & " " & Error$ & " " & sSymbol
     Resume Next
     'Exit Sub
     
@@ -1272,7 +1280,7 @@ Sub ChaikenOscillator(dOpen() As Double, dHigh() As Double, dLow() As Double, dC
         lCount = lCount - 1
         
         dADLine(lCount) = dADLine(lCount + 1) + dMFVolume(lCount)
-        'Debug.Print dADLine(lCount), dMFVolume(lCount)
+        'Write_stdout dADLine(lCount), dMFVolume(lCount)
         If lCount < 497 Then
             
             dEMA3(lCount) = dADLine(lCount) * (2 / (4)) + dEMA3(lCount + 1) * (1 - (2 / (4)))
@@ -1298,7 +1306,7 @@ Sub ChaikenOscillator(dOpen() As Double, dHigh() As Double, dLow() As Double, dC
         If lCount < 1 Then Exit Do
         
     Loop
-'Debug.Print dOscillator(1)
+'Write_stdout dOscillator(1)
 'Stop
         
 End Sub
@@ -1315,11 +1323,11 @@ Function dSMA(lStart As Long, lPeriods As Long) As Double
         DoEvents
         lCount = lCount + 1
         dSMA = dSMA + Hist(lCount + lStart).Close
-        'Debug.Print Hist(lCount).Close, lPeriods, dSMA, lCount
+        'Write_stdout Hist(lCount).Close, lPeriods, dSMA, lCount
         If lCount = (lPeriods) Then Exit Do
 
     Loop
-    'Debug.Print Hist(1).Close, dSMA, lPeriods, dSMA / lPeriods, lCount
+    'Write_stdout Hist(1).Close, dSMA, lPeriods, dSMA / lPeriods, lCount
     dSMA = dSMA / lPeriods
 'Stop
     
@@ -1392,7 +1400,7 @@ Sub GetPublicPrices(sSymbol As String, iPeriod As Integer)
         If lCounter >= num_rows - 1 Then Exit Do
       '  If lCounter > MaxSize - 1 Then Exit Do
         
-    '    Debug.Print lCounter, Hist(lCounter).Date; Hist(lCounter).Open, Hist(lCounter).High, Hist(lCounter).Low, Hist(lCounter).Close, Hist(lCounter).Volume
+    '    Write_stdout lCounter, Hist(lCounter).Date; Hist(lCounter).Open, Hist(lCounter).High, Hist(lCounter).Low, Hist(lCounter).Close, Hist(lCounter).Volume
     Loop
     
 End Sub
