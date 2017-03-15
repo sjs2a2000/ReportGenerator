@@ -21,8 +21,13 @@ Private Declare Function DeleteFile Lib "kernel32" Alias "DeleteFileA" _
                          As Long
 
 Sub Main()
+    Dim strCommandLine As String
+    strCommandLine = Command
     'Write_stdout 'starting program'
-    Write_stdout ("starting program")
+    Write_stdout "starting program with input " & strCommandLine
+    Dim inputs() As String
+    
+    
     'CheckForHoliday
     'right is to create a work book in each case and copy it into the new one, need to pass in workbook that is open
     Set ExcelApp = CreateObject("Excel.Application")
@@ -42,8 +47,19 @@ Sub Main()
     ExcelWorkBook.Close SaveChanges = True
     ExcelApp.Application.Quit
     Excel.Application.Quit
-   
-    SendReport "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals.xls"
+    Write_stdout "checking the input before sending"
+    Write_stdout "splitting input"
+    inputs() = Split(strCommandLine, "|")
+    Dim numInputs As Integer
+    numInputs = UBound(inputs) + 1
+    Write_stdout "numberInputs=" & numInputs
+    If numInputs > 1 Then
+        Write_stdout "providing subject and email"
+        SendReport "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals.xls", inputs(0), inputs(1)
+    Else
+        Write_stdout "providing subject for email only"
+        SendReport "c:\Users\scott\refdatavb6\Sontag\sontagtechnicals.xls", strCommandLine
+    End If
 
 End Sub
 Sub Write_stdout(MessageLine As String)
@@ -53,7 +69,7 @@ Sub Write_stdout(MessageLine As String)
 End Sub
 
  
-Sub SendReport(sAttach As String)
+Sub SendReport(sAttach As String, Optional ByVal sSubject As String = "", Optional ByVal emailList As String = "scottandsophia@gmail.com,mkscapitalconsulting@yahoo.com,sfullman@fullmantech.com")
     Dim sMailTo             As String
     Dim cdoMsg As New CDO.Message
     Dim cdoConf As New CDO.Configuration
@@ -61,7 +77,6 @@ Sub SendReport(sAttach As String)
     Const cdoSendUsingPort = 2
     Set iMsg = CreateObject("CDO.Message")
     Set iConf = CreateObject("CDO.Configuration")
-   
     iConf.Load -1
     Set Flds = iConf.Fields
     
@@ -69,7 +84,7 @@ Sub SendReport(sAttach As String)
         .Item("http://schemas.microsoft.com/cdo/configuration/smtpusessl") = True
         .Item("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = 1
         .Item("http://schemas.microsoft.com/cdo/configuration/sendusername") = "scottandsophia@gmail.com"
-        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = "dmxs62gr"
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = "Dmxs62gr1@"
         .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp.gmail.com" 'smtp mail server
         .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
         .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 465 'stmp server
@@ -81,9 +96,9 @@ Sub SendReport(sAttach As String)
     End If
     With iMsg
         Set .Configuration = iConf
-        .To = "scottandsophia@gmail.com,mkscapitalconsulting@yahoo.com,sfullman@fullmantech.com"
+        .To = emailList
         .From = "Increasing Alpha<scottandsophia@gmail.com>"
-        .Subject = "Technical Indicators"
+        .Subject = "Technical Indicators" + sSubject
         .HTMLBody = "Technical Data"
         .Send
     End With
